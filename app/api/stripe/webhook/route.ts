@@ -1,3 +1,62 @@
-import {headers} from 'next/headers';import Stripe from 'stripe';import {db} from '@/lib/db';
-const stripe=new Stripe(process.env.STRIPE_SECRET_KEY||'');
-export async function POST(req:Request){const sig=(await headers()).get('stripe-signature');const body=await req.text();if(!sig||!process.env.STRIPE_WEBHOOK_SECRET)return new Response('Webhook not configured',{status:400});let event:Stripe.Event;try{event=stripe.webhooks.constructEvent(body,sig,process.env.STRIPE_WEBHOOK_SECRET)}catch{return new Response('Invalid signature',{status:400})}if(event.type==='checkout.session.completed'){const s=event.data.object as Stripe.Checkout.Session;const orderId=s.metadata?.orderId;if(orderId)await db.order.update({where:{id:orderId},data:{status:'PAID',paymentStatus:'PAID'}})}if(event.type==='checkout.session.expired'){const s=event.data.object as Stripe.Checkout.Session;const orderId=s.metadata?.orderId;if(orderId){const order=await db.order.findUnique({where:{id:orderId},include:{items:true}});if(order&&order.paymentStatus==='PENDING'){await db.$transaction([db.order.update({where:{id:orderId},data:{status:'CANCELLED'}}),...order.items.map(i=>db.product.update({where:{id:i.productId},data:{stock:{increment:i.quantity}}}))])}}}return new Response('ok')}
+import { headers } from 'next/headers';
+import Stripe from 'stripe';
+import { db } from '@/lib/db';
+
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not set');
+  return new Stripe(key);
+}
+
+export async function POST(req: Request) {
+  const sig = (await headers()).get('stripe-signature');
+  const body = await req.text();
+
+  if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return new Response('Webhook not configured', { status: 400 });
+  }
+
+  const stripe = getStripe();
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch {
+    return new Response('Invalid signature', { status: 400 });
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const s = event.data.object as Stripe.Checkout.Session;
+    const orderId = s.metadata?.orderId;
+    if (orderId) {
+      await db.order.update({
+        where: { id: orderId },
+        data: { status: 'PAID', paymentStatus: 'PAID' },
+      });
+    }
+  }
+
+  if (event.type === 'checkout.session.expired') {
+    const s = event.data.object as Stripe.Checkout.Session;
+    const orderId = s.metadata?.orderId;
+    if (orderId) {
+      const order = await db.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+      if (order && order.paymentStatus === 'PENDING') {
+        await db.$transaction([
+          db.order.update({ where: { id: orderId }, data: { status: 'CANCELLED' } }),
+          ...order.items.map(i =>
+            db.product.update({
+              where: { id: i.productId },
+              data: { stock: { increment: i.quantity } },
+            })
+          ),
+        ]);
+      }
+    }
+  }
+
+  return new Response('ok');
+}
