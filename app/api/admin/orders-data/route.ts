@@ -1,0 +1,1 @@
+import {NextResponse} from 'next/server';import {db} from '@/lib/db';import {requireAdmin} from '@/lib/auth';export async function GET(){try{await requireAdmin();const orders=await db.order.findMany({include:{user:true,items:true},orderBy:{createdAt:'desc'},take:100});return NextResponse.json({orders})}catch{return NextResponse.json({error:'Forbidden'},{status:403})}}
