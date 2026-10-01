@@ -2,10 +2,14 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { ProductRow } from '@/components/ProductRow';
 import { ReelsSection } from '@/components/ReelsSection';
-import { Truck, ArrowCounterClockwise, ShieldCheck, Leaf } from '@phosphor-icons/react/dist/ssr';
+import {
+  Truck, ArrowCounterClockwise, ShieldCheck, Leaf,
+  SealCheck, Clock, Medal,
+} from '@phosphor-icons/react/dist/ssr';
 
 export const dynamic = 'force-dynamic';
 
+/* ── Shop-by-room data ── */
 const ROOMS = [
   {
     label: 'Living Room',
@@ -29,25 +33,68 @@ const ROOMS = [
   },
 ];
 
+/* ── Category chip data ── */
+const CATS = [
+  { label: 'Indoor Plants',    emoji: '🪴', href: '/shop?category=indoor-plants' },
+  { label: 'Outdoor Plants',   emoji: '🌳', href: '/shop?category=outdoor-plants' },
+  { label: 'Air Purifiers',    emoji: '💨', href: '/shop?q=air+purifier' },
+  { label: 'Succulents',       emoji: '🌵', href: '/shop?q=succulent' },
+  { label: 'Flowering',        emoji: '🌸', href: '/shop?q=flowering' },
+  { label: 'Pots & Planters',  emoji: '🏺', href: '/shop?category=pots-planters' },
+  { label: 'Soil & Compost',   emoji: '🌱', href: '/shop?category=soil-fertilizer' },
+  { label: 'Garden Tools',     emoji: '🛠️',  href: '/shop?category=tools' },
+];
+
+/* ── Trust / Why GreenLeaf ── */
+const TRUST = [
+  {
+    icon: <SealCheck size={24} weight="duotone" />,
+    title: '3-Step Quality Check',
+    desc: 'Every plant is inspected for health, roots, and foliage before dispatch.',
+  },
+  {
+    icon: <Truck size={24} weight="duotone" />,
+    title: 'Delivered Safely',
+    desc: 'Eco-friendly packaging keeps your plant intact from our nursery to your door.',
+  },
+  {
+    icon: <ArrowCounterClockwise size={24} weight="duotone" />,
+    title: '7-Day Replacement',
+    desc: 'Not happy? We replace it, no questions asked, within 7 days of delivery.',
+  },
+  {
+    icon: <Clock size={24} weight="duotone" />,
+    title: 'Expert Plant Care',
+    desc: 'Detailed care guides and live support from our in-house plant experts.',
+  },
+];
+
 export default async function Home() {
   const featured = await db.product.findMany({
     where: { active: true, featured: true },
     include: { category: true },
-    take: 8,
+    take: 10,
   });
 
   const indoor = await db.product.findMany({
     where: { active: true, category: { slug: 'indoor-plants' } },
     include: { category: true },
-    take: 8,
+    take: 10,
   });
 
-  // Pick up to 5 products to pair with reels
+  const outdoor = await db.product.findMany({
+    where: { active: true, category: { slug: 'outdoor-plants' } },
+    include: { category: true },
+    take: 10,
+  });
+
   const reelProducts = featured.slice(0, 5);
 
   return (
     <>
-      {/* ── Video Hero ── */}
+      {/* ══════════════════════════════════════
+          VIDEO HERO
+      ══════════════════════════════════════ */}
       <section className="video-hero">
         <video
           className="video-hero-bg"
@@ -57,42 +104,132 @@ export default async function Home() {
         />
         <div className="video-hero-overlay" aria-hidden="true" />
         <div className="video-hero-content container">
-          <span className="hero-eyebrow">India's Favourite Plant Store</span>
-          <h1>Bring Nature Into Your Home</h1>
+          <span className="hero-eyebrow">
+            <span className="hero-eyebrow-dot" aria-hidden="true" />
+            India's Favourite Plant Store
+          </span>
+          <h1>
+            Bring <em>Nature</em><br />
+            Into Your Home
+          </h1>
           <p>
             Shop healthy indoor plants, outdoor greenery, pots, soil and garden
             tools — carefully packed and delivered to your doorstep.
           </p>
           <div className="hero-cta">
-            <Link className="btn primary" href="/shop">Shop All Plants</Link>
-            <Link className="btn hero-outline" href="/shop?category=indoor-plants">
+            <Link className="btn primary lg" href="/shop">
+              Shop All Plants
+            </Link>
+            <Link className="btn outline-white lg" href="/shop?category=indoor-plants">
               Explore Indoor Plants
             </Link>
           </div>
         </div>
+        <div className="hero-scroll-hint" aria-hidden="true">
+          <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+            <rect x="1" y="1" width="14" height="22" rx="7" stroke="currentColor" strokeWidth="1.5"/>
+            <circle cx="8" cy="8" r="2" fill="currentColor">
+              <animate attributeName="cy" values="8;14;8" dur="1.8s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <span>Scroll</span>
+        </div>
       </section>
 
-      {/* ── Offer strip ── */}
+      {/* ══════════════════════════════════════
+          OFFER STRIP
+      ══════════════════════════════════════ */}
       <div className="offer-strip">
         <div className="container">
           <div className="offer-strip-inner">
-            <div className="offer-item"><Truck size={16} weight="bold" />Free Shipping on orders above ₹999</div>
-            <div className="offer-item"><ArrowCounterClockwise size={16} weight="bold" />7-Day Free Replacement</div>
-            <div className="offer-item"><ShieldCheck size={16} weight="bold" />100% Healthy Plants Guaranteed</div>
-            <div className="offer-item"><Leaf size={16} weight="bold" />10,000+ Plants Delivered</div>
+            <div className="offer-item">
+              <Truck size={15} weight="bold" />
+              Free Shipping on orders above ₹999
+            </div>
+            <div className="offer-item">
+              <ArrowCounterClockwise size={15} weight="bold" />
+              7-Day Free Replacement
+            </div>
+            <div className="offer-item">
+              <ShieldCheck size={15} weight="bold" />
+              100% Healthy Plants Guaranteed
+            </div>
+            <div className="offer-item">
+              <Medal size={15} weight="bold" />
+              10,000+ Happy Plant Parents
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Transform Your Home ── */}
+      {/* ══════════════════════════════════════
+          CATEGORY CHIPS STRIP
+      ══════════════════════════════════════ */}
+      <div className="cat-strip">
+        <div className="container">
+          <div className="cat-strip-inner">
+            {CATS.map(c => (
+              <Link key={c.label} href={c.href} className="cat-chip">
+                <span className="cat-chip-emoji" aria-hidden="true">{c.emoji}</span>
+                {c.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════
+          BEST SELLERS
+      ══════════════════════════════════════ */}
+      {featured.length > 0 && (
+        <section className="section">
+          <div className="container">
+            <div className="section-header">
+              <div>
+                <p className="section-eyebrow">Top Picks</p>
+                <h2>Best Selling Plants</h2>
+              </div>
+              <Link href="/shop">View all →</Link>
+            </div>
+            <ProductRow products={featured} />
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════
+          TRUST SECTION
+      ══════════════════════════════════════ */}
+      <section className="trust-section">
+        <div className="container">
+          <div className="trust-grid">
+            {TRUST.map(t => (
+              <div className="trust-item" key={t.title}>
+                <div className="trust-icon-wrap">{t.icon}</div>
+                <div className="trust-item-body">
+                  <h3>{t.title}</h3>
+                  <p>{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          SHOP BY ROOM
+      ══════════════════════════════════════ */}
       <section className="transform-section">
         <div className="container">
-          <h2 className="transform-title">Transform Your Home.</h2>
+          <p className="section-eyebrow" style={{ textAlign: 'center' }}>Shop by Space</p>
+          <h2 className="transform-title">Find Plants for Every Corner</h2>
+          <p className="transform-subtitle">
+            From sun-drenched balconies to cosy bedrooms — we have the perfect green companion for every space.
+          </p>
           <div className="transform-grid">
             {ROOMS.map(r => (
               <Link key={r.label} href={r.href} className="transform-card">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r.image} alt={r.label} className="transform-img" />
+                <img src={r.image} alt={r.label} className="transform-img" loading="lazy" />
                 <div className="transform-overlay" />
                 <div className="transform-label">{r.label}</div>
                 <div className="transform-shop-btn">Shop Now</div>
@@ -102,25 +239,17 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── Best sellers ── */}
-      {featured.length > 0 && (
-        <section className="section" style={{ paddingTop: 0 }}>
-          <div className="container">
-            <div className="section-header">
-              <h2>Best Selling Plants</h2>
-              <Link href="/shop">View all →</Link>
-            </div>
-            <ProductRow products={featured} />
-          </div>
-        </section>
-      )}
-
-      {/* ── Indoor plants ── */}
+      {/* ══════════════════════════════════════
+          INDOOR PLANTS
+      ══════════════════════════════════════ */}
       {indoor.length > 0 && (
-        <section className="section" style={{ paddingTop: 0 }}>
+        <section className="section">
           <div className="container">
             <div className="section-header">
-              <h2>Popular Indoor Plants</h2>
+              <div>
+                <p className="section-eyebrow">Bestsellers</p>
+                <h2>Popular Indoor Plants</h2>
+              </div>
               <Link href="/shop?category=indoor-plants">View all →</Link>
             </div>
             <ProductRow products={indoor} />
@@ -128,31 +257,89 @@ export default async function Home() {
         </section>
       )}
 
-      {/* ── Trust section ── */}
-      <section className="trust-section">
+      {/* ══════════════════════════════════════
+          PROMO BANNER
+      ══════════════════════════════════════ */}
+      <div className="promo-banner">
+        <div className="container promo-banner-inner">
+          <div>
+            <h2>New to plant parenting?<br />We've got you covered.</h2>
+            <p>
+              Browse our curated collection of beginner-friendly, low-maintenance plants —
+              hand-picked by our in-house horticulturists for guaranteed success.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', flexShrink: 0 }}>
+            <Link className="btn primary lg" href="/shop?difficulty=Beginner">
+              Shop Easy Plants
+            </Link>
+            <Link className="btn outline-white lg" href="/shop?q=air+purifier">
+              Air Purifier Plants
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════
+          OUTDOOR PLANTS
+      ══════════════════════════════════════ */}
+      {outdoor.length > 0 && (
+        <section className="section">
+          <div className="container">
+            <div className="section-header">
+              <div>
+                <p className="section-eyebrow">Garden Ready</p>
+                <h2>Outdoor Plants</h2>
+              </div>
+              <Link href="/shop?category=outdoor-plants">View all →</Link>
+            </div>
+            <ProductRow products={outdoor} />
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════
+          REELS / STAY TUNED
+      ══════════════════════════════════════ */}
+      <ReelsSection products={reelProducts} />
+
+      {/* ══════════════════════════════════════
+          SOCIAL PROOF NUMBERS
+      ══════════════════════════════════════ */}
+      <section style={{ background: 'var(--brand)', padding: '52px 0' }}>
         <div className="container">
-          <div className="trust-grid">
-            <div className="trust-item">
-              <div className="trust-icon" aria-hidden="true">🌿</div>
-              <h3>Unbeatable Quality</h3>
-              <p>We sell quality garden products at the very best prices — no compromises.</p>
-            </div>
-            <div className="trust-item">
-              <div className="trust-icon" aria-hidden="true">🚚</div>
-              <h3>Pan-India Delivery</h3>
-              <p>Greenery at your doorstep, everywhere in India. Fast & careful packaging.</p>
-            </div>
-            <div className="trust-item">
-              <div className="trust-icon" aria-hidden="true">🔄</div>
-              <h3>Free Replacements</h3>
-              <p>In case of damage or poor health, we provide a free replacement. No questions asked.</p>
-            </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 2,
+            textAlign: 'center',
+          }}>
+            {[
+              { num: '50,000+', label: 'Plants Delivered' },
+              { num: '4.8★',   label: 'Average Rating' },
+              { num: '10,000+', label: 'Happy Customers' },
+              { num: '500+',    label: 'Plant Varieties' },
+            ].map(s => (
+              <div key={s.label} style={{ padding: '16px 8px' }}>
+                <div style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 'clamp(28px, 3.5vw, 40px)',
+                  fontWeight: 400,
+                  color: '#fff',
+                  letterSpacing: '-.02em',
+                  lineHeight: 1.15,
+                  marginBottom: 6,
+                }}>
+                  {s.num}
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', fontWeight: 500 }}>
+                  {s.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
-
-      {/* ── Reels / Stay Tuned section ── */}
-      <ReelsSection products={reelProducts} />
     </>
   );
 }

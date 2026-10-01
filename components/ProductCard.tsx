@@ -1,18 +1,24 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star } from '@phosphor-icons/react';
+import { Star, ShoppingCartSimple, Heart } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 export function ProductCard({ p }: { p: any }) {
-  const isFeatured = p.featured;
-  const hasDiscount = p.compareAtPrice && p.compareAtPrice > p.price;
+  const hasDiscount   = p.compareAtPrice && p.compareAtPrice > p.price;
+  const discountPct   = hasDiscount
+    ? Math.round((1 - p.price / p.compareAtPrice) * 100)
+    : null;
+  const outOfStock    = p.stock === 0;
+  const reviewCount   = p.stock > 10 ? '120+' : p.stock > 0 ? `${p.stock * 4}` : '0';
 
   function addToCart(e: React.MouseEvent) {
     e.preventDefault();
+    e.stopPropagation();
+    if (outOfStock) return;
     try {
       const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-      const idx = cart.findIndex((x: any) => x.productId === p.id);
+      const idx  = cart.findIndex((x: any) => x.productId === p.id);
       if (idx >= 0) {
         cart[idx].quantity = Math.min(p.stock, cart[idx].quantity + 1);
       } else {
@@ -25,39 +31,75 @@ export function ProductCard({ p }: { p: any }) {
 
   return (
     <article className="pcard">
-      <Link href={`/product/${p.slug}`} className="pcard-img-link" tabIndex={-1}>
-        {/* Image */}
+      {/* ── Image area ── */}
+      <Link href={`/product/${p.slug}`} className="pcard-img-link" tabIndex={-1} aria-label={p.name}>
         <div className="pcard-img-wrap">
           <Image
             src={p.imageUrl}
             alt={p.name}
             fill
-            sizes="(max-width: 600px) 160px, 240px"
+            sizes="(max-width: 480px) 45vw, (max-width: 768px) 40vw, 248px"
             style={{ objectFit: 'cover' }}
           />
 
-          {/* Bestseller / Featured badge */}
-          {isFeatured && (
-            <span className="pcard-badge-featured" aria-label="Bestseller">
-              ★ BESTSELLER
+          {/* Discount badge — top left, accent orange */}
+          {discountPct && (
+            <span className="pcard-badge-discount" aria-label={`${discountPct}% off`}>
+              -{discountPct}%
             </span>
           )}
 
-          {/* Rating overlay at bottom of image */}
-          <div className="pcard-rating" aria-label="Rating">
-            <Star size={11} weight="fill" color="#f5c518" />
-            <span className="pcard-rating-score">4.8</span>
-            <span className="pcard-rating-sep">·</span>
-            <span className="pcard-rating-count">{p.stock > 10 ? '120+' : p.stock > 0 ? `${p.stock * 4}` : '0'}</span>
-          </div>
+          {/* Bestseller badge — only when no discount */}
+          {!discountPct && p.featured && (
+            <span className="pcard-badge-featured">★ Bestseller</span>
+          )}
+
+          {/* Wishlist button — top right */}
+          <button
+            className="pcard-wishlist"
+            aria-label={`Save ${p.name}`}
+            onClick={e => { e.preventDefault(); e.stopPropagation(); }}
+          >
+            <Heart size={16} weight="bold" />
+          </button>
+
+          {/* Rating pill — bottom left, above quick-add */}
+          {!outOfStock && (
+            <div className="pcard-rating" aria-label="Rating">
+              <Star size={11} weight="fill" color="#c8980a" />
+              <span className="pcard-rating-score">4.8</span>
+              <span className="pcard-rating-sep">·</span>
+              <span className="pcard-rating-count">{reviewCount}</span>
+            </div>
+          )}
+
+          {/* Quick-add button — slides up on hover */}
+          {outOfStock ? (
+            <div className="pcard-quick-add pcard-out-of-stock">Out of Stock</div>
+          ) : (
+            <button
+              className="pcard-quick-add"
+              onClick={addToCart}
+              aria-label={`Add ${p.name} to cart`}
+            >
+              <ShoppingCartSimple size={14} weight="bold" />
+              Add to Cart
+            </button>
+          )}
         </div>
       </Link>
 
-      {/* Card body */}
+      {/* ── Card body ── */}
       <div className="pcard-body">
+        {/* Category label */}
+        {p.category?.name && (
+          <span className="pcard-cat">{p.category.name}</span>
+        )}
+
         <h3 className="pcard-name">
           <Link href={`/product/${p.slug}`}>{p.name}</Link>
         </h3>
+
         {p.description && (
           <p className="pcard-desc">{p.description}</p>
         )}
@@ -68,13 +110,16 @@ export function ProductCard({ p }: { p: any }) {
             {hasDiscount && (
               <span className="pcard-compare">{money(p.compareAtPrice)}</span>
             )}
+            {discountPct && (
+              <span className="pcard-discount-pct">{discountPct}% off</span>
+            )}
           </div>
           <Link
             href={`/product/${p.slug}`}
             className="pcard-btn"
             aria-label={`View ${p.name}`}
           >
-            View Product
+            View
           </Link>
         </div>
       </div>
