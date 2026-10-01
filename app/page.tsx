@@ -202,26 +202,7 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════
-          CATEGORY CARDS GRID
-      ══════════════════════════════════════ */}
-      <section className="cat-section">
-        <div className="container">
-          <div className="cat-grid">
-            {CATS.map(c => (
-              <Link key={c.label} href={c.href} className="cat-card">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.image} alt={c.label} className="cat-card-img" loading="lazy" />
-                <div className="cat-card-overlay" />
-                <div className="cat-card-body">
-                  <span className="cat-card-emoji" aria-hidden="true">{c.emoji}</span>
-                  <span className="cat-card-label">{c.label}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* ══════════════════════════════════════
           BEST SELLERS
