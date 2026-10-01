@@ -45,7 +45,7 @@ export function AdminDashboard() {
           <p className="muted">Overview of your store performance</p>
         </div>
         <div className="adminnav" style={{ margin: 0 }}>
-          <Link className="btn primary" href="/admin/products/new">+ Add Product</Link>
+          <Link className="btn primary" href="/admin/products?action=add">+ Add Product</Link>
           <Link className="btn" href="/admin/products">Products</Link>
           <Link className="btn" href="/admin/orders">Orders</Link>
         </div>
@@ -188,7 +188,7 @@ export function AdminDashboard() {
                       </span>
                     </td>
                     <td>
-                      <Link href={`/admin/products/${p.id}/edit`} className="btn" style={{ padding: '4px 10px', fontSize: 12 }}>
+                      <Link href={`/admin/products?edit=${p.id}`} className="btn" style={{ padding: '4px 10px', fontSize: 12 }}>
                         Restock
                       </Link>
                     </td>

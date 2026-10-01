@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Plus, PencilSimple, Archive, Upload, X, Check, Star } from '@phosphor-icons/react';
@@ -60,7 +61,29 @@ export function AdminProductList() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    load().then(() => {
+      // Auto-open "add" form when coming from ?action=add
+      if (searchParams.get('action') === 'add') {
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-open edit form when coming from ?edit=<id>
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (!editId || products.length === 0) return;
+    const product = products.find((p: any) => p.id === editId);
+    if (product) {
+      startEdit(product);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
 
   function set(k: keyof Form, v: any) {
     setForm(f => {
