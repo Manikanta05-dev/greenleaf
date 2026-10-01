@@ -119,7 +119,7 @@ export function ProductCard({ p }: { p: any }) {
             className="pcard-btn"
             aria-label={`View ${p.name}`}
           >
-            View
+            View Product
           </Link>
         </div>
       </div>

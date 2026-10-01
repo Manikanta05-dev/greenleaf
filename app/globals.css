@@ -704,12 +704,11 @@ img { display: block; }
 }
 .pcard-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
   margin-top: 12px;
 }
-.pcard-prices { display: flex; align-items: baseline; gap: 7px; }
+.pcard-prices { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
 .pcard-price {
   font-size: 17px;
   font-weight: 700;
@@ -730,19 +729,21 @@ img { display: block; }
   border-radius: 4px;
 }
 .pcard-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  padding: 8px 16px;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
   background: var(--brand);
   color: #fff;
   border-radius: var(--r-pill);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
   transition: background .2s;
-  flex-shrink: 0;
   border: none;
   cursor: pointer;
+  letter-spacing: .02em;
 }
 .pcard-btn:hover { background: var(--brand-dark); }
 
@@ -1794,4 +1795,121 @@ footer { background: #181a17; color: rgba(255,255,255,.75); margin-top: auto; }
   transform: translateY(0) !important;
   font-size: 11px;
   letter-spacing: .04em;
+}
+
+/* ══════════════════════════════════════
+   ADDRESS MODAL
+══════════════════════════════════════ */
+.addr-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.addr-modal {
+  background: #fff;
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideUp .2s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.addr-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.addr-modal-header h3 {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text);
+}
+.addr-modal-close {
+  width: 32px; height: 32px;
+  border: none;
+  background: var(--bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background .15s, color .15s;
+}
+.addr-modal-close:hover { background: var(--border-light); color: var(--text); }
+.addr-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+.addr-modal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.addr-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+/* ══════════════════════════════════════
+   PHONE INPUT WITH PREFIX
+══════════════════════════════════════ */
+.phone-input-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.phone-input-wrap:focus-within { border-color: var(--brand); }
+.phone-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: var(--bg-alt);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
+  border-right: 1.5px solid var(--border);
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+}
+.phone-input {
+  flex: 1;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 11px 14px;
+  font-size: 14px;
+  background: transparent;
+  outline: none !important;
+  min-width: 0;
+  letter-spacing: .06em;
 }

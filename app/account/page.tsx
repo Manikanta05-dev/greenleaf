@@ -2,7 +2,10 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { SquaresFour, Package as PhPackage, MapPin as PhMapPin, SignOut, CaretDown, CaretUp, ArrowSquareOut } from '@phosphor-icons/react';
+import {
+  SquaresFour, Package as PhPackage, MapPin as PhMapPin, SignOut,
+  CaretDown, CaretUp, ArrowSquareOut, PencilSimple, Trash, Plus, X,
+} from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -10,15 +13,37 @@ const STATUS_COLOR: Record<string, string> = {
   SHIPPED: '#8b5cf6', DELIVERED: '#2e7d32', CANCELLED: '#ef4444', REFUNDED: '#6b7280',
 };
 
+const INDIAN_STATES = [
+  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
+  'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
+  'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab',
+  'Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh',
+  'Uttarakhand','West Bengal','Delhi','Jammu and Kashmir','Ladakh',
+];
+
+const EMPTY_ADDR = {
+  label: 'Home', line1: '', line2: '', city: '', state: '',
+  postalCode: '', country: 'India', phone: '',
+};
+
 function AccountInner() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
-  const [msg, setMsg] = useState('');
+  const [user, setUser]           = useState<any>(null);
+  const [loading, setLoading]     = useState(true);
+  const [mode, setMode]           = useState<'login' | 'register'>('login');
+  const [form, setForm]           = useState({ name: '', email: '', password: '', phone: '' });
+  const [msg, setMsg]             = useState('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  // Address modal state
+  const [addrModal, setAddrModal]     = useState(false);
+  const [editingAddr, setEditingAddr] = useState<any>(null); // null = new
+  const [addrForm, setAddrForm]       = useState({ ...EMPTY_ADDR });
+  const [addrError, setAddrError]     = useState('');
+  const [addrSaving, setAddrSaving]   = useState(false);
+  const [deletingId, setDeletingId]   = useState<string | null>(null);
+
   const router = useRouter();
-  const sp = useSearchParams();
+  const sp     = useSearchParams();
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -45,51 +70,126 @@ function AccountInner() {
     location.reload();
   }
 
+  // ── Address modal helpers ────────────────────────────────────────────────
+  function openNewAddr() {
+    setEditingAddr(null);
+    setAddrForm({ ...EMPTY_ADDR });
+    setAddrError('');
+    setAddrModal(true);
+  }
+
+  function openEditAddr(a: any) {
+    setEditingAddr(a);
+    setAddrForm({
+      label:      a.label,
+      line1:      a.line1,
+      line2:      a.line2 ?? '',
+      city:       a.city,
+      state:      a.state,
+      postalCode: a.postalCode,
+      country:    a.country,
+      phone:      a.phone ?? '',
+    });
+    setAddrError('');
+    setAddrModal(true);
+  }
+
+  function closeAddrModal() {
+    setAddrModal(false);
+    setEditingAddr(null);
+    setAddrError('');
+  }
+
+  async function saveAddr() {
+    setAddrError('');
+    // Client-side validation
+    if (!addrForm.line1 || !addrForm.city || !addrForm.state || !addrForm.postalCode) {
+      setAddrError('Please fill in all required fields.'); return;
+    }
+    if (!/^\d{6}$/.test(addrForm.postalCode)) {
+      setAddrError('PIN code must be exactly 6 digits.'); return;
+    }
+    if (addrForm.phone && !/^\d{10}$/.test(addrForm.phone)) {
+      setAddrError('Mobile number must be exactly 10 digits.'); return;
+    }
+
+    setAddrSaving(true);
+    try {
+      const payload = { ...addrForm, phone: addrForm.phone || undefined };
+      const url    = editingAddr ? `/api/addresses?id=${editingAddr.id}` : '/api/addresses';
+      const method = editingAddr ? 'PUT' : 'POST';
+      const r      = await fetch(url, {
+        method,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (!r.ok) { setAddrError(d.error || 'Failed to save address.'); return; }
+
+      // Refresh user data
+      const me = await fetch('/api/auth/me').then(x => x.json());
+      setUser(me.user);
+      closeAddrModal();
+    } finally {
+      setAddrSaving(false);
+    }
+  }
+
+  async function deleteAddr(id: string) {
+    if (!confirm('Delete this address?')) return;
+    setDeletingId(id);
+    try {
+      const r = await fetch(`/api/addresses?id=${id}`, { method: 'DELETE' });
+      if (!r.ok) { alert('Failed to delete address.'); return; }
+      const me = await fetch('/api/auth/me').then(x => x.json());
+      setUser(me.user);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   if (loading) return (
-    <main className="container section">
-      <p className="muted">Loading…</p>
-    </main>
+    <main className="container section"><p className="muted">Loading…</p></main>
   );
 
   if (user) return (
     <main className="container section">
       <div className="account-layout">
+
         {/* ── Left sidebar ── */}
         <aside className="account-sidebar">
-          <div className="account-avatar">{user.name?.[0]?.toUpperCase()}</div>
-          <div className="account-name">{user.name}</div>
-          <div className="account-email">{user.email}</div>
-
-          {/* Role badge */}
-          {user.role === 'ADMIN' && (
-            <span className="account-role-badge">Admin</span>
-          )}
-
-          <nav className="account-nav">
-            {user.role === 'ADMIN' && (
-              <Link href="/admin" className="account-nav-item admin-nav-item">
-                <SquaresFour size={16} weight="duotone" />
-                Admin Dashboard
-              </Link>
-            )}
-            <a href="#orders" className="account-nav-item">
-              <PhPackage size={16} weight="duotone" />
-              My Orders
-            </a>
-            <a href="#addresses" className="account-nav-item">
-              <PhMapPin size={16} weight="duotone" />
-              Saved Addresses
-            </a>
-            <button className="account-nav-item danger" onClick={logout}>
-              <SignOut size={16} weight="bold" />
-              Log Out
-            </button>
-          </nav>
+          <div className="account-sidebar-card">
+            <div className="account-header-box">
+              <div className="account-avatar">{user.name?.[0]?.toUpperCase()}</div>
+              <div className="account-name">{user.name}</div>
+              <div className="account-email">{user.email}</div>
+            </div>
+            <nav className="account-nav">
+              {user.role === 'ADMIN' && (
+                <Link href="/admin" className="account-nav-item admin-nav-item">
+                  <SquaresFour size={16} weight="duotone" />
+                  Admin Dashboard
+                </Link>
+              )}
+              <a href="#orders" className="account-nav-item">
+                <PhPackage size={16} weight="duotone" />
+                My Orders
+              </a>
+              <a href="#addresses" className="account-nav-item">
+                <PhMapPin size={16} weight="duotone" />
+                Saved Addresses
+              </a>
+              <button className="account-nav-item danger" onClick={logout}>
+                <SignOut size={16} weight="bold" />
+                Log Out
+              </button>
+            </nav>
+          </div>
         </aside>
 
         {/* ── Right content ── */}
         <div className="account-content">
-          {/* Admin quick-access banner */}
           {user.role === 'ADMIN' && (
             <div className="admin-banner">
               <SquaresFour size={18} weight="duotone" />
@@ -113,26 +213,26 @@ function AccountInner() {
                     <div
                       className="account-order-header"
                       onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
-                      role="button"
-                      tabIndex={0}
+                      role="button" tabIndex={0}
                       onKeyDown={e => e.key === 'Enter' && setExpandedOrder(expandedOrder === o.id ? null : o.id)}
                     >
                       <div>
                         <div className="account-order-id">Order #{o.id.slice(-8)}</div>
-                        <div className="muted" style={{ fontSize: 12 }}>{new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          {new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span className="badge" style={{ background: (STATUS_COLOR[o.status] ?? '#ccc') + '22', color: STATUS_COLOR[o.status] ?? '#555' }}>
                           {o.status}
                         </span>
-                        <span style={{ fontWeight: 800 }}>{money(o.total)}</span>
+                        <span style={{ fontWeight: 700 }}>{money(o.total)}</span>
                         {expandedOrder === o.id ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />}
                       </div>
                     </div>
 
                     {expandedOrder === o.id && (
                       <div className="account-order-detail">
-                        {/* Items */}
                         <div className="account-order-items">
                           {o.items?.map((item: any) => (
                             <div key={item.id} className="account-order-item">
@@ -142,16 +242,14 @@ function AccountInner() {
                             </div>
                           ))}
                         </div>
-                        {/* Totals */}
                         <div className="account-order-totals">
                           <div><span>Subtotal</span><span>{money(o.subtotal)}</span></div>
                           <div><span>Shipping</span><span>{o.shipping === 0 ? 'Free' : money(o.shipping)}</span></div>
                           <div><span>GST</span><span>{money(o.tax)}</span></div>
-                          <div style={{ fontWeight: 800, borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 4 }}>
+                          <div style={{ fontWeight: 700, borderTop: '1px solid var(--border-light)', paddingTop: 8, marginTop: 4 }}>
                             <span>Total</span><span>{money(o.total)}</span>
                           </div>
                         </div>
-                        {/* Tracking */}
                         {o.trackingNumber && (
                           <div className="account-tracking">
                             <span>📦 Tracking: <strong>{o.trackingNumber}</strong></span>
@@ -162,15 +260,9 @@ function AccountInner() {
                             )}
                           </div>
                         )}
-                        {/* Download receipt */}
                         <div style={{ marginTop: 12 }}>
-                          <a
-                            href={`/api/orders/receipt?id=${o.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn"
-                            style={{ fontSize: 13, gap: 6, padding: '8px 16px' }}
-                          >
+                          <a href={`/api/orders/receipt?id=${o.id}`} target="_blank" rel="noreferrer"
+                            className="btn" style={{ fontSize: 13, gap: 6, padding: '8px 16px' }}>
                             📄 Download Receipt (PDF)
                           </a>
                         </div>
@@ -189,52 +281,219 @@ function AccountInner() {
 
           {/* ── Addresses ── */}
           <section id="addresses" className="account-section">
-            <h2 className="account-section-title">Saved Addresses</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 className="account-section-title" style={{ marginBottom: 0 }}>Saved Addresses</h2>
+              <button className="btn primary" style={{ gap: 6, padding: '8px 16px', fontSize: 13 }} onClick={openNewAddr}>
+                <Plus size={14} weight="bold" /> Add Address
+              </button>
+            </div>
+
             {user.addresses?.length ? (
               <div className="account-addr-grid">
                 {user.addresses.map((a: any) => (
-                  <div key={a.id} className="account-addr-card">
-                    <div className="account-addr-label">{a.label}</div>
-                    <div className="account-addr-text">
+                  <div key={a.id} className={`account-addr-card${a.isDefault ? ' default' : ''}`}>
+                    {a.isDefault && (
+                      <span className="badge" style={{ fontSize: 10, marginBottom: 8, display: 'inline-flex' }}>Default</span>
+                    )}
+                    <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--muted)', marginBottom: 6 }}>
+                      {a.label}
+                    </div>
+                    <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
                       {a.line1}{a.line2 ? `, ${a.line2}` : ''}<br />
                       {a.city}, {a.state} — {a.postalCode}<br />
-                      {a.country}{a.phone ? ` · ${a.phone}` : ''}
+                      {a.country}
+                      {a.phone && <><br />📱 +91 {a.phone}</>}
+                    </div>
+                    <div className="account-addr-actions">
+                      <button
+                        className="btn sm"
+                        style={{ gap: 5 }}
+                        onClick={() => openEditAddr(a)}
+                      >
+                        <PencilSimple size={13} weight="bold" /> Edit
+                      </button>
+                      <button
+                        className="btn sm"
+                        style={{ gap: 5, color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                        onClick={() => deleteAddr(a.id)}
+                        disabled={deletingId === a.id}
+                      >
+                        <Trash size={13} weight="bold" />
+                        {deletingId === a.id ? 'Deleting…' : 'Delete'}
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="muted">No saved addresses. Add one during checkout.</p>
+              <p className="muted">No saved addresses yet. Add one to speed up checkout.</p>
             )}
           </section>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════
+          ADDRESS MODAL
+      ══════════════════════════════════════ */}
+      {addrModal && (
+        <div className="addr-modal-backdrop" onClick={closeAddrModal} role="dialog" aria-modal="true" aria-label="Address form">
+          <div className="addr-modal" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="addr-modal-header">
+              <h3>{editingAddr ? 'Edit Address' : 'Add New Address'}</h3>
+              <button className="addr-modal-close" onClick={closeAddrModal} aria-label="Close">
+                <X size={18} weight="bold" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="addr-modal-body">
+              {/* Label */}
+              <div className="form-group">
+                <label>Label</label>
+                <select className="select" value={addrForm.label} onChange={e => setAddrForm({ ...addrForm, label: e.target.value })}>
+                  {['Home', 'Work', 'Other'].map(l => <option key={l}>{l}</option>)}
+                </select>
+              </div>
+
+              {/* Address line 1 */}
+              <div className="form-group">
+                <label>Address Line 1 *</label>
+                <input className="input" placeholder="Flat / House no., Street name"
+                  value={addrForm.line1} onChange={e => setAddrForm({ ...addrForm, line1: e.target.value })} />
+              </div>
+
+              {/* Address line 2 */}
+              <div className="form-group">
+                <label>Address Line 2</label>
+                <input className="input" placeholder="Landmark, Area (optional)"
+                  value={addrForm.line2} onChange={e => setAddrForm({ ...addrForm, line2: e.target.value })} />
+              </div>
+
+              <div className="addr-modal-row">
+                {/* City */}
+                <div className="form-group">
+                  <label>City *</label>
+                  <input className="input" placeholder="Mumbai"
+                    value={addrForm.city} onChange={e => setAddrForm({ ...addrForm, city: e.target.value })} />
+                </div>
+
+                {/* PIN code */}
+                <div className="form-group">
+                  <label>PIN Code *</label>
+                  <input
+                    className="input"
+                    placeholder="400001"
+                    maxLength={6}
+                    inputMode="numeric"
+                    pattern="\d{6}"
+                    value={addrForm.postalCode}
+                    onChange={e => setAddrForm({ ...addrForm, postalCode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                  />
+                </div>
+              </div>
+
+              {/* State */}
+              <div className="form-group">
+                <label>State *</label>
+                <select className="select" value={addrForm.state} onChange={e => setAddrForm({ ...addrForm, state: e.target.value })}>
+                  <option value="">Select state…</option>
+                  {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+
+              {/* Phone with +91 prefix */}
+              <div className="form-group">
+                <label>Mobile Number (optional)</label>
+                <div className="phone-input-wrap">
+                  <span className="phone-prefix">+91</span>
+                  <input
+                    className="input phone-input"
+                    placeholder="98765 43210"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={addrForm.phone}
+                    onChange={e => setAddrForm({ ...addrForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  />
+                </div>
+                {addrForm.phone && addrForm.phone.length < 10 && (
+                  <span style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
+                    {10 - addrForm.phone.length} more digit{10 - addrForm.phone.length !== 1 ? 's' : ''} needed
+                  </span>
+                )}
+              </div>
+
+              {addrError && (
+                <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>{addrError}</p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="addr-modal-footer">
+              <button className="btn" onClick={closeAddrModal}>Cancel</button>
+              <button className="btn primary" onClick={saveAddr} disabled={addrSaving}>
+                {addrSaving ? 'Saving…' : editingAddr ? 'Save Changes' : 'Add Address'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 
-  // ── Login / Register ──
+  // ── Login / Register ──────────────────────────────────────────────────────
   return (
     <main className="container section">
       <div className="panel" style={{ maxWidth: 520, margin: 'auto' }}>
-        <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, marginBottom: 20 }}>
+          {mode === 'login' ? 'Welcome back' : 'Create your account'}
+        </h1>
+
         {mode === 'register' && (
-          <input className="input" style={{ marginTop: 12 }} placeholder="Full name" autoComplete="name"
-            value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} suppressHydrationWarning />
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label>Full Name</label>
+            <input className="input" placeholder="Ravi Kumar" autoComplete="name"
+              value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          </div>
         )}
-        <input className="input" style={{ marginTop: 12 }} placeholder="Email" type="email" autoComplete="email"
-          value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} suppressHydrationWarning />
-        <input className="input" style={{ marginTop: 12 }} placeholder="Password" type="password"
-          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} suppressHydrationWarning />
+
+        <div className="form-group" style={{ marginBottom: 12 }}>
+          <label>Email</label>
+          <input className="input" placeholder="you@example.com" type="email" autoComplete="email"
+            value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+        </div>
+
+        <div className="form-group" style={{ marginBottom: 12 }}>
+          <label>Password</label>
+          <input className="input" placeholder="••••••••" type="password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+        </div>
+
         {mode === 'register' && (
-          <input className="input" style={{ marginTop: 12 }} placeholder="Phone (optional)" type="tel" autoComplete="tel"
-            value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} suppressHydrationWarning />
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label>Mobile Number (optional)</label>
+            <div className="phone-input-wrap">
+              <span className="phone-prefix">+91</span>
+              <input
+                className="input phone-input"
+                placeholder="98765 43210"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.phone}
+                onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              />
+            </div>
+          </div>
         )}
-        <button className="btn primary" style={{ marginTop: 16, width: '100%' }} onClick={submit}>
+
+        <button className="btn primary full" style={{ marginTop: 8 }} onClick={submit}>
           {mode === 'login' ? 'Log in' : 'Create account'}
         </button>
         {msg && <p style={{ color: 'var(--danger)', marginTop: 8, fontSize: 13 }}>{msg}</p>}
-        <button className="btn ghost" style={{ marginTop: 8, width: '100%' }}
+        <button className="btn ghost full" style={{ marginTop: 8 }}
           onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setMsg(''); }}>
           {mode === 'login' ? 'New here? Create an account' : 'Already have an account? Log in'}
         </button>
