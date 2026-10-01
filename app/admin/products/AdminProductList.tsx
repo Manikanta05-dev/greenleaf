@@ -20,30 +20,51 @@ function slugify(s: string) {
 
 export function AdminProductList() {
   const [products, setProducts] = useState<any[]>([]);
-  const [cats, setCats] = useState<any[]>([]);
+  const [cats, setCats]         = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState<Form>({ ...EMPTY_FORM });
+  const [editing, setEditing]   = useState<string | null>(null);
+  const [form, setForm]         = useState<Form>({ ...EMPTY_FORM });
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState('');
-  const [search, setSearch] = useState('');
+  const [saving, setSaving]     = useState(false);
+  const [msg, setMsg]           = useState('');
+  const [search, setSearch]     = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const load = () =>
-    fetch('/api/products?categories=1')
-      .then(r => r.json())
-      .then(d => {
-        setProducts(d.products || []);
-        setCats(d.categories || []);
-      });
+  // ── Load products + categories from the ADMIN endpoint ──────────────────
+  const load = async () => {
+    // Admin products endpoint returns all products including archived
+    const [prodRes, catRes] = await Promise.all([
+      fetch('/api/admin/products'),
+      fetch('/api/admin/stats'),          // stats includes category data indirectly
+    ]);
+
+    const prodData = await prodRes.json();
+    setProducts(prodData.products || []);
+
+    // Derive unique categories from the loaded products
+    const seen = new Map<string, { id: string; name: string }>();
+    (prodData.products || []).forEach((p: any) => {
+      if (p.category && !seen.has(p.categoryId)) {
+        seen.set(p.categoryId, { id: p.categoryId, name: p.category.name });
+      }
+    });
+
+    // Also hit the public categories endpoint (it always returns all categories)
+    const catData = await fetch('/api/products?categories=1').then(r => r.json());
+    const allCats: { id: string; name: string }[] = catData.categories || [];
+    // Merge: prefer public list (has all categories even if no products yet)
+    if (allCats.length > 0) {
+      setCats(allCats);
+    } else {
+      setCats(Array.from(seen.values()));
+    }
+  };
 
   useEffect(() => { load(); }, []);
 
   function set(k: keyof Form, v: any) {
     setForm(f => {
       const next = { ...f, [k]: v };
-      // auto-slug when typing name for new product
       if (k === 'name' && !editing) next.slug = slugify(v);
       return next;
     });
@@ -62,24 +83,36 @@ export function AdminProductList() {
 
   async function save() {
     setMsg('');
-    if (!form.name || !form.slug || !form.categoryId || !form.price) {
-      setMsg('Name, slug, category and price are required.');
-      return;
-    }
+    if (!form.name.trim())       { setMsg('Product name is required.');        return; }
+    if (!form.slug.trim())       { setMsg('Slug is required.');                 return; }
+    if (!form.categoryId)        { setMsg('Please select a category.');         return; }
+    if (!form.price)             { setMsg('Price is required.');                return; }
+    if (Number(form.price) <= 0) { setMsg('Price must be greater than zero.'); return; }
+
     setSaving(true);
-    const url = editing ? `/api/admin/products/${editing}` : '/api/admin/products';
-    const r = await fetch(url, {
-      method: editing ? 'PATCH' : 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    setSaving(false);
-    const d = await r.json();
-    if (!r.ok) { setMsg(d.error || 'Could not save product'); return; }
-    setShowForm(false);
-    setEditing(null);
-    setForm({ ...EMPTY_FORM });
-    load();
+    const url    = editing ? `/api/admin/products/${editing}` : '/api/admin/products';
+    const method = editing ? 'PATCH' : 'POST';
+
+    try {
+      const r = await fetch(url, {
+        method,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          price:          Number(form.price),
+          compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : null,
+          stock:          Number(form.stock || 0),
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setMsg(d.error || 'Could not save product'); return; }
+      setShowForm(false);
+      setEditing(null);
+      setForm({ ...EMPTY_FORM });
+      load();
+    } finally {
+      setSaving(false);
+    }
   }
 
   function startEdit(p: any) {
@@ -87,7 +120,7 @@ export function AdminProductList() {
       name: p.name, slug: p.slug, description: p.description || '',
       careInstructions: p.careInstructions || '', price: String(p.price),
       compareAtPrice: p.compareAtPrice ? String(p.compareAtPrice) : '',
-      stock: String(p.stock), categoryId: p.categoryId, imageUrl: p.imageUrl,
+      stock: String(p.stock), categoryId: p.categoryId, imageUrl: p.imageUrl || '',
       plantType: p.plantType || '', sunlight: p.sunlight || '',
       waterNeeds: p.waterNeeds || '', size: p.size || '',
       difficulty: p.difficulty || 'Easy', featured: p.featured, active: p.active,
@@ -144,9 +177,11 @@ export function AdminProductList() {
 
           {msg && <div className="admin-msg-error">{msg}</div>}
 
-          <div className="admin-form-body">
-            {/* Left: image upload */}
-            <div className="admin-img-col">
+          {/* ── IMAGE UPLOAD — full width at top ── */}
+          <div className="admin-img-section">
+            <div className="admin-img-section-label">Product Image</div>
+            <div className="admin-img-row">
+              {/* Drop zone */}
               <div
                 className="admin-img-drop"
                 onClick={() => fileRef.current?.click()}
@@ -158,19 +193,32 @@ export function AdminProductList() {
                 }}
               >
                 {form.imageUrl ? (
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1' }}>
-                    <Image src={form.imageUrl} alt="preview" fill style={{ objectFit: 'cover', borderRadius: 10 }} />
-                    <button
-                      className="admin-img-clear"
-                      onClick={e => { e.stopPropagation(); set('imageUrl', ''); }}
-                    ><X size={14} /></button>
-                  </div>
+                  <>
+                    <div style={{ position: 'relative', width: 140, height: 140, borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
+                      <Image src={form.imageUrl} alt="preview" fill style={{ objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <p style={{ fontSize: 13, color: 'var(--muted)' }}>Image uploaded. Click or drag to replace.</p>
+                      <button
+                        type="button"
+                        className="btn sm"
+                        style={{ color: 'var(--danger)', borderColor: 'var(--danger)', width: 'fit-content' }}
+                        onClick={e => { e.stopPropagation(); set('imageUrl', ''); }}
+                      >
+                        <X size={12} /> Remove image
+                      </button>
+                    </div>
+                  </>
                 ) : (
-                  <div className="admin-img-placeholder">
-                    <Upload size={28} />
-                    <span>{uploading ? 'Uploading…' : 'Click or drag to upload'}</span>
-                    <span style={{ fontSize: 11, opacity: .6 }}>JPEG, PNG, WebP · max 5 MB</span>
-                  </div>
+                  <>
+                    <div className="admin-img-placeholder">
+                      <Upload size={28} style={{ color: 'var(--brand)' }} />
+                      <span style={{ fontWeight: 600 }}>
+                        {uploading ? 'Uploading…' : 'Click or drag & drop to upload'}
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--muted)' }}>JPEG, PNG, WebP · max 5 MB</span>
+                    </div>
+                  </>
                 )}
               </div>
               <input
@@ -180,110 +228,123 @@ export function AdminProductList() {
                 style={{ display: 'none' }}
                 onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); }}
               />
-              <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6, textAlign: 'center' }}>
-                Or paste a URL:
-              </p>
-              <input
-                className="input"
-                placeholder="https://…"
-                value={form.imageUrl}
-                onChange={e => set('imageUrl', e.target.value)}
-                style={{ marginTop: 4 }}
-              />
+
+              {/* URL fallback */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 0 }}>
+                <label className="form-group" style={{ gap: 5 }}>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                    Or paste an image URL
+                  </span>
+                  <input
+                    className="input"
+                    placeholder="https://images.unsplash.com/…"
+                    value={form.imageUrl}
+                    onChange={e => set('imageUrl', e.target.value)}
+                  />
+                </label>
+                {form.imageUrl && (
+                  <p style={{ fontSize: 12, color: 'var(--brand)' }}>✓ Image URL set</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── FIELDS ── */}
+          <div className="admin-form-body">
+            {/* Basic info */}
+            <div className="admin-form-section">Basic Information</div>
+            <div className="formgrid">
+              <div className="form-group full">
+                <label>Product Name *</label>
+                <input className="input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Monstera Deliciosa" />
+              </div>
+              <div className="form-group">
+                <label>Slug *</label>
+                <input className="input" value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="monstera-deliciosa" />
+              </div>
+              <div className="form-group">
+                <label>Category *</label>
+                <select className="select" value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
+                  <option value="">— Select category —</option>
+                  {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                {cats.length === 0 && (
+                  <span style={{ fontSize: 11, color: 'var(--accent)', marginTop: 3 }}>
+                    Loading categories…
+                  </span>
+                )}
+              </div>
+              <div className="form-group full">
+                <label>Description</label>
+                <textarea className="textarea" rows={3} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Short product description…" />
+              </div>
+              <div className="form-group full">
+                <label>Care Instructions</label>
+                <textarea className="textarea" rows={2} value={form.careInstructions} onChange={e => set('careInstructions', e.target.value)} placeholder="Watering, light, repotting tips…" />
+              </div>
             </div>
 
-            {/* Right: fields */}
-            <div className="admin-fields-col">
-              {/* Basic info */}
-              <div className="admin-form-section">Basic Information</div>
-              <div className="formgrid">
-                <div className="form-group full">
-                  <label>Product Name *</label>
-                  <input className="input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Monstera Deliciosa" />
-                </div>
-                <div className="form-group">
-                  <label>Slug *</label>
-                  <input className="input" value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="monstera-deliciosa" />
-                </div>
-                <div className="form-group">
-                  <label>Category *</label>
-                  <select className="select" value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
-                    <option value="">Select category</option>
-                    {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group full">
-                  <label>Description</label>
-                  <textarea className="textarea" rows={3} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Short product description…" />
-                </div>
-                <div className="form-group full">
-                  <label>Care Instructions</label>
-                  <textarea className="textarea" rows={2} value={form.careInstructions} onChange={e => set('careInstructions', e.target.value)} placeholder="Watering, light, repotting tips…" />
-                </div>
+            {/* Pricing & stock */}
+            <div className="admin-form-section">Pricing & Inventory</div>
+            <div className="formgrid">
+              <div className="form-group">
+                <label>Price (₹) *</label>
+                <input className="input" type="number" min="1" value={form.price} onChange={e => set('price', e.target.value)} placeholder="799" />
               </div>
+              <div className="form-group">
+                <label>Compare-at Price (₹) <span style={{ fontWeight: 400, opacity: .7 }}>(for strike-through)</span></label>
+                <input className="input" type="number" min="0" value={form.compareAtPrice} onChange={e => set('compareAtPrice', e.target.value)} placeholder="999" />
+              </div>
+              <div className="form-group">
+                <label>Stock Quantity *</label>
+                <input className="input" type="number" min="0" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="0" />
+              </div>
+            </div>
 
-              {/* Pricing & stock */}
-              <div className="admin-form-section">Pricing & Inventory</div>
-              <div className="formgrid">
-                <div className="form-group">
-                  <label>Price (₹) *</label>
-                  <input className="input" type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} placeholder="799" />
+            {/* Plant details */}
+            <div className="admin-form-section">Plant Details <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--muted)' }}>(optional)</span></div>
+            <div className="formgrid">
+              {([
+                ['plantType',  'Plant Type',   'Tropical'],
+                ['size',       'Pot Size',     '5 inch'],
+                ['sunlight',   'Sunlight',     'Bright indirect'],
+                ['waterNeeds', 'Water Needs',  'Moderate'],
+              ] as [keyof Form, string, string][]).map(([k, l, ph]) => (
+                <div className="form-group" key={k}>
+                  <label>{l}</label>
+                  <input className="input" value={form[k] as string} onChange={e => set(k, e.target.value)} placeholder={ph} />
                 </div>
-                <div className="form-group">
-                  <label>Compare-at Price (₹)</label>
-                  <input className="input" type="number" min="0" value={form.compareAtPrice} onChange={e => set('compareAtPrice', e.target.value)} placeholder="999" />
-                </div>
-                <div className="form-group">
-                  <label>Stock Quantity *</label>
-                  <input className="input" type="number" min="0" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="0" />
-                </div>
+              ))}
+              <div className="form-group">
+                <label>Difficulty</label>
+                <select className="select" value={form.difficulty} onChange={e => set('difficulty', e.target.value)}>
+                  <option>Beginner</option>
+                  <option>Easy</option>
+                  <option>Intermediate</option>
+                  <option>Expert</option>
+                </select>
               </div>
+            </div>
 
-              {/* Plant details */}
-              <div className="admin-form-section">Plant Details</div>
-              <div className="formgrid">
-                {([
-                  ['plantType', 'Plant Type', 'Tropical'],
-                  ['size', 'Size', '5 inch pot'],
-                  ['sunlight', 'Sunlight', 'Bright indirect'],
-                  ['waterNeeds', 'Water Needs', 'Moderate'],
-                ] as [keyof Form, string, string][]).map(([k, l, ph]) => (
-                  <div className="form-group" key={k}>
-                    <label>{l}</label>
-                    <input className="input" value={form[k] as string} onChange={e => set(k, e.target.value)} placeholder={ph} />
-                  </div>
-                ))}
-                <div className="form-group">
-                  <label>Difficulty</label>
-                  <select className="select" value={form.difficulty} onChange={e => set('difficulty', e.target.value)}>
-                    <option>Beginner</option>
-                    <option>Easy</option>
-                    <option>Intermediate</option>
-                    <option>Expert</option>
-                  </select>
-                </div>
-              </div>
+            {/* Visibility flags */}
+            <div className="admin-form-section">Visibility</div>
+            <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+              <label className="admin-toggle">
+                <input type="checkbox" checked={form.featured} onChange={e => set('featured', e.target.checked)} />
+                <span>Mark as Featured / Bestseller</span>
+              </label>
+              <label className="admin-toggle">
+                <input type="checkbox" checked={form.active} onChange={e => set('active', e.target.checked)} />
+                <span>Active (visible in store)</span>
+              </label>
+            </div>
 
-              {/* Flags */}
-              <div className="admin-form-section">Visibility</div>
-              <div style={{ display: 'flex', gap: 24 }}>
-                <label className="admin-toggle">
-                  <input type="checkbox" checked={form.featured} onChange={e => set('featured', e.target.checked)} />
-                  <span>Mark as Featured / Bestseller</span>
-                </label>
-                <label className="admin-toggle">
-                  <input type="checkbox" checked={form.active} onChange={e => set('active', e.target.checked)} />
-                  <span>Active (visible in store)</span>
-                </label>
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                <button className="btn primary" onClick={save} disabled={saving}>
-                  <Check size={15} /> {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Product'}
-                </button>
-                <button className="btn" onClick={cancel}>Cancel</button>
-              </div>
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
+              <button className="btn primary lg" onClick={save} disabled={saving}>
+                <Check size={16} /> {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Product'}
+              </button>
+              <button className="btn lg" onClick={cancel}>Cancel</button>
             </div>
           </div>
         </div>
@@ -319,7 +380,7 @@ export function AdminProductList() {
               {filtered.map(p => (
                 <tr key={p.id}>
                   <td>
-                    <div style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', background: '#f0f4f0', flexShrink: 0, position: 'relative' }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', background: '#ede9e0', flexShrink: 0, position: 'relative' }}>
                       {p.imageUrl && (
                         <Image src={p.imageUrl} alt={p.name} fill style={{ objectFit: 'cover' }} sizes="52px" />
                       )}
@@ -329,8 +390,8 @@ export function AdminProductList() {
                     <div style={{ fontWeight: 600 }}>{p.name}</div>
                     <div className="muted" style={{ fontSize: 12 }}>{p.slug}</div>
                     {p.featured && (
-                      <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>
-                        <Star size={10} style={{ display: 'inline' }} /> Featured
+                      <span style={{ fontSize: 11, color: '#c8980a', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        <Star size={10} weight="fill" /> Featured
                       </span>
                     )}
                   </td>
@@ -353,10 +414,10 @@ export function AdminProductList() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn" style={{ padding: '5px 10px' }} onClick={() => startEdit(p)}>
+                      <button className="btn sm" style={{ gap: 5 }} onClick={() => startEdit(p)}>
                         <PencilSimple size={13} /> Edit
                       </button>
-                      <button className="btn" style={{ padding: '5px 10px', color: 'var(--danger)' }} onClick={() => archive(p.id)}>
+                      <button className="btn sm" style={{ gap: 5, color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => archive(p.id)}>
                         <Archive size={13} /> Archive
                       </button>
                     </div>

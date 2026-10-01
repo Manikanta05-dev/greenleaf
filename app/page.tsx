@@ -33,16 +33,56 @@ const ROOMS = [
   },
 ];
 
-/* ── Category chip data ── */
+/* ── Category chips/cards strip data ── */
 const CATS = [
-  { label: 'Indoor Plants',    emoji: '🪴', href: '/shop?category=indoor-plants' },
-  { label: 'Outdoor Plants',   emoji: '🌳', href: '/shop?category=outdoor-plants' },
-  { label: 'Air Purifiers',    emoji: '💨', href: '/shop?q=air+purifier' },
-  { label: 'Succulents',       emoji: '🌵', href: '/shop?q=succulent' },
-  { label: 'Flowering',        emoji: '🌸', href: '/shop?q=flowering' },
-  { label: 'Pots & Planters',  emoji: '🏺', href: '/shop?category=pots-planters' },
-  { label: 'Soil & Compost',   emoji: '🌱', href: '/shop?category=soil-fertilizer' },
-  { label: 'Garden Tools',     emoji: '🛠️',  href: '/shop?category=tools' },
+  {
+    label: 'Indoor Plants',
+    emoji: '🪴',
+    href: '/shop?category=indoor-plants',
+    image: 'https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    label: 'Outdoor Plants',
+    emoji: '🌳',
+    href: '/shop?category=outdoor-plants',
+    image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    label: 'Air Purifiers',
+    emoji: '💨',
+    href: '/shop?q=air+purifier',
+    image: 'https://images.unsplash.com/photo-1567360425618-1594206637d2?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    label: 'Succulents',
+    emoji: '🌵',
+    href: '/shop?q=succulent',
+    image: 'https://images.unsplash.com/photo-1459156212016-c812468e2115?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    label: 'Flowering',
+    emoji: '🌸',
+    href: '/shop?q=flowering',
+    image: 'https://images.unsplash.com/photo-1490750967868-88df5691cc33?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    label: 'Pots & Planters',
+    emoji: '🏺',
+    href: '/shop?category=pots-planters',
+    image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    label: 'Soil & Compost',
+    emoji: '🌱',
+    href: '/shop?category=soil-fertilizer',
+    image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    label: 'Garden Tools',
+    emoji: '🛠️',
+    href: '/shop?category=tools',
+    image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=600&q=80',
+  },
 ];
 
 /* ── Trust / Why GreenLeaf ── */
@@ -163,20 +203,25 @@ export default async function Home() {
       </div>
 
       {/* ══════════════════════════════════════
-          CATEGORY CHIPS STRIP
+          CATEGORY CARDS GRID
       ══════════════════════════════════════ */}
-      <div className="cat-strip">
+      <section className="cat-section">
         <div className="container">
-          <div className="cat-strip-inner">
+          <div className="cat-grid">
             {CATS.map(c => (
-              <Link key={c.label} href={c.href} className="cat-chip">
-                <span className="cat-chip-emoji" aria-hidden="true">{c.emoji}</span>
-                {c.label}
+              <Link key={c.label} href={c.href} className="cat-card">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.image} alt={c.label} className="cat-card-img" loading="lazy" />
+                <div className="cat-card-overlay" />
+                <div className="cat-card-body">
+                  <span className="cat-card-emoji" aria-hidden="true">{c.emoji}</span>
+                  <span className="cat-card-label">{c.label}</span>
+                </div>
               </Link>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ══════════════════════════════════════
           BEST SELLERS
