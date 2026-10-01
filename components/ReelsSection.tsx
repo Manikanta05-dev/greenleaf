@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight, ShoppingCart, ExternalLink } from 'lucide-react';
+import { CaretRight, ShoppingCartSimple, ArrowSquareOut } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 // Reel captions — one per reel slot
@@ -103,7 +103,7 @@ export function ReelsSection({ products }: Props) {
                       {r.product.name.length > 16
                         ? r.product.name.slice(0, 15) + '…'
                         : r.product.name}
-                      <ExternalLink size={10} style={{ marginLeft: 3, opacity: .6 }} />
+                      <ArrowSquareOut size={10} style={{ marginLeft: 3, opacity: .6 }} />
                     </Link>
                     <span className="reel-prod-price">{money(r.product.price)}</span>
                   </div>
@@ -112,7 +112,7 @@ export function ReelsSection({ products }: Props) {
                     onClick={e => addToCart(r.product, e)}
                     aria-label={`Add ${r.product.name} to cart`}
                   >
-                    <ShoppingCart size={13} />
+                    <ShoppingCartSimple size={13} weight="bold" />
                     Add
                   </button>
                 </div>
@@ -122,7 +122,7 @@ export function ReelsSection({ products }: Props) {
 
           {/* Scroll arrow */}
           <button className="reels-arrow" onClick={scrollRight} aria-label="Scroll reels right">
-            <ChevronRight size={22} />
+            <CaretRight size={22} weight="bold" />
           </button>
         </div>
       </div>

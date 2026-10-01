@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ShoppingCart, User, Search, Leaf, ChevronDown, Menu, X } from 'lucide-react';
+import { ShoppingCartSimple, UserCircle, MagnifyingGlass, Leaf, CaretDown, List, X } from '@phosphor-icons/react';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -215,7 +215,7 @@ export function Header() {
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             onClick={() => setMobileOpen(o => !o)}
           >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileOpen ? <X size={22} /> : <List size={22} />}
           </button>
 
           <Link className="logo" href="/">
@@ -232,17 +232,17 @@ export function Header() {
               aria-label="Search"
             />
             <button type="submit" aria-label="Submit search">
-              <Search size={15} />
+              <MagnifyingGlass size={15} weight="bold" />
             </button>
           </form>
 
           <div className="header-actions">
             <Link className="icon-btn" href="/account">
-              <User size={17} />
+              <UserCircle size={20} weight="duotone" />
               <span>Account</span>
             </Link>
             <Link className="icon-btn" href="/cart" aria-label={`Cart (${count} items)`}>
-              <ShoppingCart size={17} />
+              <ShoppingCartSimple size={20} weight="duotone" />
               <span>Cart</span>
               {count > 0 && <span className="cart-badge">{count}</span>}
             </Link>
@@ -262,7 +262,7 @@ export function Header() {
                 onChange={e => setQuery(e.target.value)}
                 aria-label="Search"
               />
-              <button type="submit" aria-label="Search"><Search size={15} /></button>
+              <button type="submit" aria-label="Search"><MagnifyingGlass size={15} weight="bold" /></button>
             </form>
 
             {NAV.map(item => (
@@ -273,7 +273,7 @@ export function Header() {
                   aria-expanded={mobileExpanded === item.label}
                 >
                   <span>{item.label}</span>
-                  <ChevronDown size={16} style={{ transform: mobileExpanded === item.label ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                  <CaretDown size={16} style={{ transform: mobileExpanded === item.label ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
                 </button>
                 {mobileExpanded === item.label && (
                   <div className="mobile-nav-sub">
@@ -297,10 +297,10 @@ export function Header() {
 
             <div className="mobile-nav-footer">
               <Link href="/account" className="mobile-nav-footer-link" onClick={() => setMobileOpen(false)}>
-                <User size={16} /> Account
+                <UserCircle size={16} weight="duotone" /> Account
               </Link>
               <Link href="/cart" className="mobile-nav-footer-link" onClick={() => setMobileOpen(false)}>
-                <ShoppingCart size={16} /> Cart {count > 0 && `(${count})`}
+                <ShoppingCartSimple size={16} weight="duotone" /> Cart {count > 0 && `(${count})`}
               </Link>
             </div>
           </div>
@@ -322,7 +322,7 @@ export function Header() {
                 onClick={() => setOpenMenu(null)}
               >
                 {item.label}
-                <ChevronDown size={13} className="mega-chevron" />
+                <CaretDown size={13} className="mega-chevron" />
               </Link>
 
               {/* Dropdown panel */}

@@ -1,6 +1,6 @@
 'use client';
 import { useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { ProductCard } from './ProductCard';
 
 interface Props {
@@ -26,7 +26,7 @@ export function ProductRow({ products }: Props) {
         onClick={() => scroll('left')}
         aria-label="Scroll left"
       >
-        <ChevronLeft size={20} />
+        <CaretLeft size={20} weight="bold" />
       </button>
 
       <div className="prow-track" ref={trackRef}>
@@ -42,7 +42,7 @@ export function ProductRow({ products }: Props) {
         onClick={() => scroll('right')}
         aria-label="Scroll right"
       >
-        <ChevronRight size={20} />
+        <CaretRight size={20} weight="bold" />
       </button>
     </div>
   );

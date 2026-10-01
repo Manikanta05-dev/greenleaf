@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Star } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 export function ProductCard({ p }: { p: any }) {
@@ -45,7 +45,7 @@ export function ProductCard({ p }: { p: any }) {
 
           {/* Rating overlay at bottom of image */}
           <div className="pcard-rating" aria-label="Rating">
-            <Star size={11} fill="currentColor" strokeWidth={0} />
+            <Star size={11} weight="fill" color="#f5c518" />
             <span className="pcard-rating-score">4.8</span>
             <span className="pcard-rating-sep">·</span>
             <span className="pcard-rating-count">{p.stock > 10 ? '120+' : p.stock > 0 ? `${p.stock * 4}` : '0'}</span>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShieldCheck, RefreshCw, Truck, CreditCard, Smartphone } from 'lucide-react';
+import { ShieldCheck, ArrowCounterClockwise, Truck, CreditCard, DeviceMobile } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 declare global {
@@ -301,7 +301,7 @@ export default function Checkout() {
                 </label>
                 <label className={`co-pay-option ${payMethod === 'upi' ? 'selected' : ''}`}>
                   <input type="radio" name="paymethod" value="upi" checked={payMethod === 'upi'} onChange={() => setPayMethod('upi')} />
-                  <Smartphone size={18} />
+                  <DeviceMobile size={18} />
                   <div>
                     <div style={{ fontWeight: 600 }}>UPI / QR</div>
                     <div className="muted" style={{ fontSize: 12 }}>Google Pay, PhonePe, BHIM UPI</div>
@@ -390,7 +390,7 @@ export default function Checkout() {
             {/* Trust strip */}
             <div className="co-trust-strip">
               <div><Truck size={13} /> Free shipping ≥ ₹999</div>
-              <div><RefreshCw size={13} /> 7-day replacement</div>
+              <div><ArrowCounterClockwise size={13} /> 7-day replacement</div>
               <div><ShieldCheck size={13} /> 100% genuine plants</div>
             </div>
           </div>

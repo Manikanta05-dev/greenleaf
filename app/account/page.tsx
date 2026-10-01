@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Package, MapPin, LogOut, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { SquaresFour, Package as PhPackage, MapPin as PhMapPin, SignOut, CaretDown, CaretUp, ArrowSquareOut } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -68,20 +68,20 @@ function AccountInner() {
           <nav className="account-nav">
             {user.role === 'ADMIN' && (
               <Link href="/admin" className="account-nav-item admin-nav-item">
-                <LayoutDashboard size={16} />
+                <SquaresFour size={16} weight="duotone" />
                 Admin Dashboard
               </Link>
             )}
             <a href="#orders" className="account-nav-item">
-              <Package size={16} />
+              <PhPackage size={16} weight="duotone" />
               My Orders
             </a>
             <a href="#addresses" className="account-nav-item">
-              <MapPin size={16} />
+              <PhMapPin size={16} weight="duotone" />
               Saved Addresses
             </a>
             <button className="account-nav-item danger" onClick={logout}>
-              <LogOut size={16} />
+              <SignOut size={16} weight="bold" />
               Log Out
             </button>
           </nav>
@@ -92,7 +92,7 @@ function AccountInner() {
           {/* Admin quick-access banner */}
           {user.role === 'ADMIN' && (
             <div className="admin-banner">
-              <LayoutDashboard size={18} />
+              <SquaresFour size={18} weight="duotone" />
               <div>
                 <strong>You're logged in as Admin.</strong>
                 <span> Manage products, orders, and inventory from the dashboard.</span>
@@ -126,7 +126,7 @@ function AccountInner() {
                           {o.status}
                         </span>
                         <span style={{ fontWeight: 800 }}>{money(o.total)}</span>
-                        {expandedOrder === o.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        {expandedOrder === o.id ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />}
                       </div>
                     </div>
 
@@ -157,7 +157,7 @@ function AccountInner() {
                             <span>📦 Tracking: <strong>{o.trackingNumber}</strong></span>
                             {o.trackingUrl && (
                               <a href={o.trackingUrl} target="_blank" rel="noreferrer" className="btn" style={{ padding: '4px 12px', fontSize: 12, gap: 4 }}>
-                                Track <ExternalLink size={11} />
+                                Track <ArrowSquareOut size={11} />
                               </a>
                             )}
                           </div>

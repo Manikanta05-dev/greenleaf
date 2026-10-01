@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { money } from '@/lib/format';
 import {
-  ShoppingBag, TrendingUp, Package, AlertTriangle,
+  ShoppingBag, ChartLineUp, Package, Warning,
   CheckCircle, Clock, Truck, XCircle,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: '#f59e0b', PAID: '#10b981', PROCESSING: '#3b82f6',
@@ -55,7 +55,7 @@ export function AdminDashboard() {
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-icon" style={{ background: '#e8f5e9' }}>
-            <TrendingUp size={22} color="#2e7d32" />
+            <ChartLineUp size={22} color="#2e7d32" weight="duotone" />
           </div>
           <div>
             <div className="kpi-label">Total Revenue</div>
@@ -85,7 +85,7 @@ export function AdminDashboard() {
         </div>
         <div className="kpi-card">
           <div className="kpi-icon" style={{ background: '#fff3e0' }}>
-            <AlertTriangle size={22} color="#e65100" />
+            <Warning size={22} color="#e65100" weight="fill" />
           </div>
           <div>
             <div className="kpi-label">Low / Out of Stock</div>
@@ -168,12 +168,12 @@ export function AdminDashboard() {
         {/* Low stock alerts */}
         <div className="panel">
           <h3 className="dash-panel-title">
-            <AlertTriangle size={15} style={{ color: '#e65100', marginRight: 6 }} />
+            <Warning size={15} style={{ color: '#e65100', marginRight: 6 }} weight="fill" />
             Low Stock Alerts
           </h3>
           {(data?.lowStock ?? []).length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#2e7d32', padding: '12px 0' }}>
-              <CheckCircle size={16} /> All products are well stocked
+              <CheckCircle size={16} weight="fill" /> All products are well stocked
             </div>
           ) : (
             <table className="table">

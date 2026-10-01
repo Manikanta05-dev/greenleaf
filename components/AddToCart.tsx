@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCartSimple } from '@phosphor-icons/react';
 
 export function AddToCart({ product }: { product: any }) {
   const [qty, setQty] = useState(1);
@@ -51,7 +51,7 @@ export function AddToCart({ product }: { product: any }) {
         onClick={add}
         style={{ gap: 8, padding: '13px 20px', fontSize: 15 }}
       >
-        <ShoppingCart size={17} />
+        <ShoppingCartSimple size={17} weight="bold" />
         {added ? '✓ Added to Cart!' : 'Add to Cart'}
       </button>
     </div>

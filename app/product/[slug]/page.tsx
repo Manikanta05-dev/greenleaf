@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { money } from '@/lib/format';
 import { ProductDetailClient } from './ProductDetailClient';
-import { Truck, RefreshCw, ShieldCheck, Leaf } from 'lucide-react';
+import { Truck, ArrowCounterClockwise, ShieldCheck, Leaf } from '@phosphor-icons/react/dist/ssr';
 
 export default async function ProductPage({
   params,
@@ -176,19 +176,19 @@ export default async function ProductPage({
             {/* Trust icons */}
             <div className="pd-trust-row">
               <div className="pd-trust-item">
-                <Truck size={18} />
+                <Truck size={18} weight="duotone" />
                 <span>Free Delivery<br /><small>on orders ≥ ₹999</small></span>
               </div>
               <div className="pd-trust-item">
-                <RefreshCw size={18} />
+                <ArrowCounterClockwise size={18} weight="bold" />
                 <span>7-Day<br /><small>Replacement</small></span>
               </div>
               <div className="pd-trust-item">
-                <ShieldCheck size={18} />
+                <ShieldCheck size={18} weight="duotone" />
                 <span>100% Genuine<br /><small>Healthy Plants</small></span>
               </div>
               <div className="pd-trust-item">
-                <Leaf size={18} />
+                <Leaf size={18} weight="duotone" />
                 <span>Expert<br /><small>Plant Care Tips</small></span>
               </div>
             </div>

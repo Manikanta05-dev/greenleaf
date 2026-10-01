@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Trash2, ShoppingBag, Tag, ChevronRight, ShieldCheck, RefreshCw, Truck } from 'lucide-react';
+import { Trash, ShoppingBag, Tag, CaretRight, ShieldCheck, ArrowCounterClockwise, Truck } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 export default function Cart() {
@@ -102,7 +102,7 @@ export default function Cart() {
                   onClick={() => update(i, 0)}
                   aria-label={`Remove ${x.product.name}`}
                 >
-                  <Trash2 size={14} />
+                  <Trash size={14} weight="bold" />
                 </button>
               </div>
             </div>
@@ -112,7 +112,7 @@ export default function Cart() {
           <div className="cart-trust">
             <div className="cart-trust-item"><ShieldCheck size={15} /><span>Secure checkout</span></div>
             <div className="cart-trust-item"><Truck size={15} /><span>Free shipping above ₹999</span></div>
-            <div className="cart-trust-item"><RefreshCw size={15} /><span>7-day replacement</span></div>
+            <div className="cart-trust-item"><ArrowCounterClockwise size={15} weight="bold" /><span>7-day replacement</span></div>
           </div>
         </div>
 
@@ -178,7 +178,7 @@ export default function Cart() {
               href="/checkout"
               className="btn primary full checkout-cta"
             >
-              Proceed to Checkout <ChevronRight size={16} />
+              Proceed to Checkout <CaretRight size={16} weight="bold" />
             </Link>
 
             <Link href="/shop" className="btn ghost full" style={{ marginTop: 8, fontSize: 13 }}>

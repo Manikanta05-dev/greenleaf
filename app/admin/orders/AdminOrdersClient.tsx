@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 const STATUSES = ['PENDING','PAID','PROCESSING','SHIPPED','DELIVERED','CANCELLED','REFUNDED'];
@@ -129,7 +129,7 @@ export function AdminOrdersClient() {
                       className="btn"
                       style={{ padding: '4px 10px', fontSize: 12, gap: 4 }}
                     >
-                      📄 Receipt <ExternalLink size={10} />
+                      📄 Receipt <ArrowSquareOut size={10} />
                     </a>
                     {/* Refund */}
                     {o.paymentStatus === 'PAID' && (

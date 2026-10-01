@@ -1,7 +1,7 @@
 import './globals.css';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
-import { Leaf } from 'lucide-react';
+import { Leaf } from '@phosphor-icons/react/dist/ssr';
 
 export const metadata = {
   title: 'GreenLeaf Nursery — Plants, Pots & Garden Essentials',

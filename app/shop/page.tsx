@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { ProductCard } from '@/components/ProductCard';
 import { ShopFilters } from '@/components/ShopFilters';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Shop({
   searchParams,
 }: {

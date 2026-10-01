@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { ProductRow } from '@/components/ProductRow';
 import { ReelsSection } from '@/components/ReelsSection';
-import { Truck, RefreshCw, ShieldCheck, Leaf } from 'lucide-react';
+import { Truck, ArrowCounterClockwise, ShieldCheck, Leaf } from '@phosphor-icons/react/dist/ssr';
+
+export const dynamic = 'force-dynamic';
 
 const ROOMS = [
   {
@@ -74,10 +76,10 @@ export default async function Home() {
       <div className="offer-strip">
         <div className="container">
           <div className="offer-strip-inner">
-            <div className="offer-item"><Truck size={16} />Free Shipping on orders above ₹999</div>
-            <div className="offer-item"><RefreshCw size={16} />7-Day Free Replacement</div>
-            <div className="offer-item"><ShieldCheck size={16} />100% Healthy Plants Guaranteed</div>
-            <div className="offer-item"><Leaf size={16} />10,000+ Plants Delivered</div>
+            <div className="offer-item"><Truck size={16} weight="bold" />Free Shipping on orders above ₹999</div>
+            <div className="offer-item"><ArrowCounterClockwise size={16} weight="bold" />7-Day Free Replacement</div>
+            <div className="offer-item"><ShieldCheck size={16} weight="bold" />100% Healthy Plants Guaranteed</div>
+            <div className="offer-item"><Leaf size={16} weight="bold" />10,000+ Plants Delivered</div>
           </div>
         </div>
       </div>

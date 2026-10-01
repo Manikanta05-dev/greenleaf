@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Plus, Pencil, Archive, Upload, X, Check, Star } from 'lucide-react';
+import { Plus, PencilSimple, Archive, Upload, X, Check, Star } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
 const EMPTY_FORM = {
@@ -354,7 +354,7 @@ export function AdminProductList() {
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn" style={{ padding: '5px 10px' }} onClick={() => startEdit(p)}>
-                        <Pencil size={13} /> Edit
+                        <PencilSimple size={13} /> Edit
                       </button>
                       <button className="btn" style={{ padding: '5px 10px', color: 'var(--danger)' }} onClick={() => archive(p.id)}>
                         <Archive size={13} /> Archive

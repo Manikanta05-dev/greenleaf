@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ShoppingCart, Check } from 'lucide-react';
+import { ShoppingCartSimple, Check } from '@phosphor-icons/react';
 
 export function ProductDetailClient({ product }: { product: any }) {
   const [qty, setQty] = useState(1);
@@ -45,7 +45,7 @@ export function ProductDetailClient({ product }: { product: any }) {
         className={`btn ${added ? 'outline' : 'primary'} full pd-atc-btn`}
         onClick={add}
       >
-        {added ? <Check size={18} /> : <ShoppingCart size={18} />}
+        {added ? <Check size={18} weight="bold" /> : <ShoppingCartSimple size={18} weight="bold" />}
         {added ? 'Added to Cart!' : 'Add to Cart'}
       </button>
     </div>
