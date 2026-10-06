@@ -240,9 +240,16 @@ export function Header() {
 
           <div className="header-actions">
             {isSignedIn ? (
-              <div className="icon-btn clerk-user-btn">
-                <UserButton />
-                <span>Account</span>
+              <div className="clerk-user-btn">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: 'clerk-avatar',
+                      userButtonTrigger: 'clerk-trigger',
+                    },
+                  }}
+                />
+                <span className="clerk-user-label">Account</span>
               </div>
             ) : (
               <>
@@ -314,9 +321,16 @@ export function Header() {
 
             <div className="mobile-nav-footer">
               {isSignedIn ? (
-                <div className="mobile-nav-footer-link">
-                  <UserButton />
-                  <span>Account</span>
+                <div className="mobile-nav-footer-link clerk-user-btn">
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: 'clerk-avatar',
+                        userButtonTrigger: 'clerk-trigger',
+                      },
+                    }}
+                  />
+                  <span className="clerk-user-label">Account</span>
                 </div>
               ) : (
                 <>
