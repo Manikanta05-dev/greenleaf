@@ -175,6 +175,17 @@ img { display: block; }
 .icon-btn:hover { background: var(--brand-pale); color: var(--brand); border-color: var(--brand-light); }
 .icon-btn span { display: none; }
 @media (min-width: 1024px) { .icon-btn span { display: inline; } }
+
+/* Clerk UserButton wrapper in header */
+.clerk-user-btn {
+  cursor: default;
+  padding: 6px 10px;
+}
+.clerk-user-btn:hover { background: var(--brand-pale); border-color: var(--brand-light); }
+.clerk-user-btn span { font-size: 13px; font-weight: 500; color: var(--text-2); }
+/* Make Clerk's button image circular and sized right */
+.clerk-user-btn .cl-avatarBox,
+.clerk-user-btn .cl-userButtonAvatarBox { width: 26px !important; height: 26px !important; }
 .cart-badge {
   position: absolute;
   top: 2px;

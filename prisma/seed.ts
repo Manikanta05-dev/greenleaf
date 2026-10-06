@@ -333,6 +333,7 @@ async function main() {
     where: { email: 'admin@greenleaf.local' },
     update: { role: 'ADMIN' },
     create: {
+      id: 'seed_admin',
       name: 'GreenLeaf Admin',
       email: 'admin@greenleaf.local',
       passwordHash,
@@ -346,6 +347,7 @@ async function main() {
     where: { email: 'demo@greenleaf.local' },
     update: {},
     create: {
+      id: 'seed_demo',
       name: 'Demo Customer',
       email: 'demo@greenleaf.local',
       passwordHash: demoHash,

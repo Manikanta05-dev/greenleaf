@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth, useUser, SignInButton } from '@clerk/nextjs';
 import {
-  SquaresFour, Package as PhPackage, MapPin as PhMapPin, SignOut,
+  SquaresFour, Package as PhPackage, MapPin as PhMapPin,
   CaretDown, CaretUp, ArrowSquareOut, PencilSimple, Trash, Plus, X,
 } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
@@ -27,48 +28,30 @@ const EMPTY_ADDR = {
 };
 
 function AccountInner() {
-  const [user, setUser]           = useState<any>(null);
-  const [loading, setLoading]     = useState(true);
-  const [mode, setMode]           = useState<'login' | 'register'>('login');
-  const [form, setForm]           = useState({ name: '', email: '', password: '', phone: '' });
-  const [msg, setMsg]             = useState('');
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user: clerkUser } = useUser();
+  const [dbUser, setDbUser]           = useState<any>(null);
+  const [loading, setLoading]         = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   // Address modal state
   const [addrModal, setAddrModal]     = useState(false);
-  const [editingAddr, setEditingAddr] = useState<any>(null); // null = new
+  const [editingAddr, setEditingAddr] = useState<any>(null);
   const [addrForm, setAddrForm]       = useState({ ...EMPTY_ADDR });
   const [addrError, setAddrError]     = useState('');
   const [addrSaving, setAddrSaving]   = useState(false);
   const [deletingId, setDeletingId]   = useState<string | null>(null);
 
   const router = useRouter();
-  const sp     = useSearchParams();
 
   useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) { setLoading(false); return; }
+
     fetch('/api/auth/me')
       .then(r => r.json())
-      .then(d => { setUser(d.user || null); setLoading(false); });
-  }, []);
-
-  async function submit() {
-    setMsg('');
-    const r = await fetch(`/api/auth/${mode}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const d = await r.json();
-    if (!r.ok) { setMsg(d.error || 'Something went wrong'); return; }
-    setUser(d.user);
-    const redirect = sp.get('redirect');
-    if (redirect) router.push(redirect);
-  }
-
-  async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    location.reload();
-  }
+      .then(d => { setDbUser(d.user || null); setLoading(false); });
+  }, [isLoaded, isSignedIn]);
 
   // ── Address modal helpers ────────────────────────────────────────────────
   function openNewAddr() {
@@ -102,7 +85,6 @@ function AccountInner() {
 
   async function saveAddr() {
     setAddrError('');
-    // Client-side validation
     if (!addrForm.line1 || !addrForm.city || !addrForm.state || !addrForm.postalCode) {
       setAddrError('Please fill in all required fields.'); return;
     }
@@ -126,9 +108,8 @@ function AccountInner() {
       const d = await r.json();
       if (!r.ok) { setAddrError(d.error || 'Failed to save address.'); return; }
 
-      // Refresh user data
       const me = await fetch('/api/auth/me').then(x => x.json());
-      setUser(me.user);
+      setDbUser(me.user);
       closeAddrModal();
     } finally {
       setAddrSaving(false);
@@ -142,18 +123,43 @@ function AccountInner() {
       const r = await fetch(`/api/addresses?id=${id}`, { method: 'DELETE' });
       if (!r.ok) { alert('Failed to delete address.'); return; }
       const me = await fetch('/api/auth/me').then(x => x.json());
-      setUser(me.user);
+      setDbUser(me.user);
     } finally {
       setDeletingId(null);
     }
   }
   // ────────────────────────────────────────────────────────────────────────
 
-  if (loading) return (
+  if (!isLoaded || loading) return (
     <main className="container section"><p className="muted">Loading…</p></main>
   );
 
-  if (user) return (
+  // Not signed in — show a prompt
+  if (!isSignedIn) return (
+    <main className="container section">
+      <div className="panel" style={{ maxWidth: 520, margin: 'auto', textAlign: 'center', padding: '48px 32px' }}>
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, marginBottom: 12 }}>
+          Welcome to GreenLeaf
+        </h1>
+        <p className="muted" style={{ marginBottom: 28 }}>
+          Sign in to view your orders, manage addresses, and more.
+        </p>
+        <SignInButton mode="modal">
+          <button className="btn primary" style={{ padding: '12px 32px', fontSize: 15 }}>
+            Sign In / Create Account
+          </button>
+        </SignInButton>
+      </div>
+    </main>
+  );
+
+  const user = dbUser;
+
+  if (!user) return (
+    <main className="container section"><p className="muted">Loading your account…</p></main>
+  );
+
+  return (
     <main className="container section">
       <div className="account-layout">
 
@@ -161,7 +167,12 @@ function AccountInner() {
         <aside className="account-sidebar">
           <div className="account-sidebar-card">
             <div className="account-header-box">
-              <div className="account-avatar">{user.name?.[0]?.toUpperCase()}</div>
+              <div className="account-avatar">
+                {clerkUser?.imageUrl
+                  ? <img src={clerkUser.imageUrl} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+                  : user.name?.[0]?.toUpperCase()
+                }
+              </div>
               <div className="account-name">{user.name}</div>
               <div className="account-email">{user.email}</div>
             </div>
@@ -180,10 +191,6 @@ function AccountInner() {
                 <PhMapPin size={16} weight="duotone" />
                 Saved Addresses
               </a>
-              <button className="account-nav-item danger" onClick={logout}>
-                <SignOut size={16} weight="bold" />
-                Log Out
-              </button>
             </nav>
           </div>
         </aside>
@@ -305,11 +312,7 @@ function AccountInner() {
                       {a.phone && <><br />📱 +91 {a.phone}</>}
                     </div>
                     <div className="account-addr-actions">
-                      <button
-                        className="btn sm"
-                        style={{ gap: 5 }}
-                        onClick={() => openEditAddr(a)}
-                      >
+                      <button className="btn sm" style={{ gap: 5 }} onClick={() => openEditAddr(a)}>
                         <PencilSimple size={13} weight="bold" /> Edit
                       </button>
                       <button
@@ -338,7 +341,6 @@ function AccountInner() {
       {addrModal && (
         <div className="addr-modal-backdrop" onClick={closeAddrModal} role="dialog" aria-modal="true" aria-label="Address form">
           <div className="addr-modal" onClick={e => e.stopPropagation()}>
-            {/* Header */}
             <div className="addr-modal-header">
               <h3>{editingAddr ? 'Edit Address' : 'Add New Address'}</h3>
               <button className="addr-modal-close" onClick={closeAddrModal} aria-label="Close">
@@ -346,9 +348,7 @@ function AccountInner() {
               </button>
             </div>
 
-            {/* Form */}
             <div className="addr-modal-body">
-              {/* Label */}
               <div className="form-group">
                 <label>Label</label>
                 <select className="select" value={addrForm.label} onChange={e => setAddrForm({ ...addrForm, label: e.target.value })}>
@@ -356,14 +356,12 @@ function AccountInner() {
                 </select>
               </div>
 
-              {/* Address line 1 */}
               <div className="form-group">
                 <label>Address Line 1 *</label>
                 <input className="input" placeholder="Flat / House no., Street name"
                   value={addrForm.line1} onChange={e => setAddrForm({ ...addrForm, line1: e.target.value })} />
               </div>
 
-              {/* Address line 2 */}
               <div className="form-group">
                 <label>Address Line 2</label>
                 <input className="input" placeholder="Landmark, Area (optional)"
@@ -371,14 +369,11 @@ function AccountInner() {
               </div>
 
               <div className="addr-modal-row">
-                {/* City */}
                 <div className="form-group">
                   <label>City *</label>
                   <input className="input" placeholder="Mumbai"
                     value={addrForm.city} onChange={e => setAddrForm({ ...addrForm, city: e.target.value })} />
                 </div>
-
-                {/* PIN code */}
                 <div className="form-group">
                   <label>PIN Code *</label>
                   <input
@@ -393,7 +388,6 @@ function AccountInner() {
                 </div>
               </div>
 
-              {/* State */}
               <div className="form-group">
                 <label>State *</label>
                 <select className="select" value={addrForm.state} onChange={e => setAddrForm({ ...addrForm, state: e.target.value })}>
@@ -402,7 +396,6 @@ function AccountInner() {
                 </select>
               </div>
 
-              {/* Phone with +91 prefix */}
               <div className="form-group">
                 <label>Mobile Number (optional)</label>
                 <div className="phone-input-wrap">
@@ -429,7 +422,6 @@ function AccountInner() {
               )}
             </div>
 
-            {/* Footer */}
             <div className="addr-modal-footer">
               <button className="btn" onClick={closeAddrModal}>Cancel</button>
               <button className="btn primary" onClick={saveAddr} disabled={addrSaving}>
@@ -439,65 +431,6 @@ function AccountInner() {
           </div>
         </div>
       )}
-    </main>
-  );
-
-  // ── Login / Register ──────────────────────────────────────────────────────
-  return (
-    <main className="container section">
-      <div className="panel" style={{ maxWidth: 520, margin: 'auto' }}>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, marginBottom: 20 }}>
-          {mode === 'login' ? 'Welcome back' : 'Create your account'}
-        </h1>
-
-        {mode === 'register' && (
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            <label>Full Name</label>
-            <input className="input" placeholder="Ravi Kumar" autoComplete="name"
-              value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-          </div>
-        )}
-
-        <div className="form-group" style={{ marginBottom: 12 }}>
-          <label>Email</label>
-          <input className="input" placeholder="you@example.com" type="email" autoComplete="email"
-            value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-        </div>
-
-        <div className="form-group" style={{ marginBottom: 12 }}>
-          <label>Password</label>
-          <input className="input" placeholder="••••••••" type="password"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-        </div>
-
-        {mode === 'register' && (
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            <label>Mobile Number (optional)</label>
-            <div className="phone-input-wrap">
-              <span className="phone-prefix">+91</span>
-              <input
-                className="input phone-input"
-                placeholder="98765 43210"
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                value={form.phone}
-                onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              />
-            </div>
-          </div>
-        )}
-
-        <button className="btn primary full" style={{ marginTop: 8 }} onClick={submit}>
-          {mode === 'login' ? 'Log in' : 'Create account'}
-        </button>
-        {msg && <p style={{ color: 'var(--danger)', marginTop: 8, fontSize: 13 }}>{msg}</p>}
-        <button className="btn ghost full" style={{ marginTop: 8 }}
-          onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setMsg(''); }}>
-          {mode === 'login' ? 'New here? Create an account' : 'Already have an account? Log in'}
-        </button>
-      </div>
     </main>
   );
 }

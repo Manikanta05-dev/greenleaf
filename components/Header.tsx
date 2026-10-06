@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { ShoppingCartSimple, UserCircle, MagnifyingGlass, Leaf, CaretDown, List, X } from '@phosphor-icons/react';
+import { ShoppingCartSimple, MagnifyingGlass, Leaf, CaretDown, List, X } from '@phosphor-icons/react';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
 
 /* ── Mega-menu data ── */
 const NAV = [
@@ -169,6 +170,7 @@ export function Header() {
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+  const { isSignedIn } = useAuth();
 
   useEffect(() => {
     const sync = () => {
@@ -237,10 +239,25 @@ export function Header() {
           </form>
 
           <div className="header-actions">
-            <Link className="icon-btn" href="/account">
-              <UserCircle size={20} weight="duotone" />
-              <span>Account</span>
-            </Link>
+            {isSignedIn ? (
+              <div className="icon-btn clerk-user-btn">
+                <UserButton />
+                <span>Account</span>
+              </div>
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <button className="icon-btn">
+                    <span>Sign In</span>
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="btn primary" style={{ padding: '6px 14px', fontSize: 13 }}>
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </>
+            )}
             <Link className="icon-btn" href="/cart" aria-label={`Cart (${count} items)`}>
               <ShoppingCartSimple size={20} weight="duotone" />
               <span>Cart</span>
@@ -296,9 +313,21 @@ export function Header() {
             ))}
 
             <div className="mobile-nav-footer">
-              <Link href="/account" className="mobile-nav-footer-link" onClick={() => setMobileOpen(false)}>
-                <UserCircle size={16} weight="duotone" /> Account
-              </Link>
+              {isSignedIn ? (
+                <div className="mobile-nav-footer-link">
+                  <UserButton />
+                  <span>Account</span>
+                </div>
+              ) : (
+                <>
+                  <SignInButton mode="modal">
+                    <button className="mobile-nav-footer-link">Sign In</button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className="mobile-nav-footer-link">Sign Up</button>
+                  </SignUpButton>
+                </>
+              )}
               <Link href="/cart" className="mobile-nav-footer-link" onClick={() => setMobileOpen(false)}>
                 <ShoppingCartSimple size={16} weight="duotone" /> Cart {count > 0 && `(${count})`}
               </Link>

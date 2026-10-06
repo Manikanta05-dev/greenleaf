@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@clerk/nextjs';
 import { ShieldCheck, ArrowCounterClockwise, Truck, CreditCard, DeviceMobile } from '@phosphor-icons/react';
 import { money } from '@/lib/format';
 
@@ -35,11 +36,15 @@ export default function Checkout() {
   const [msg, setMsg]           = useState('');
   const [loading, setLoading]   = useState(false);
   const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) { router.push('/sign-in?redirect_url=/checkout'); return; }
+
     setCart(JSON.parse(localStorage.getItem('cart') || '[]'));
     fetch('/api/auth/me').then(r => r.json()).then(d => {
-      if (!d.user) { router.push('/account?redirect=/checkout'); return; }
+      if (!d.user) return;
       setUser(d.user);
       setAddresses(d.user.addresses || []);
       if (d.user.addresses?.[0]) setAddressId(d.user.addresses[0].id);
@@ -57,7 +62,7 @@ export default function Checkout() {
       s.src = 'https://checkout.razorpay.com/v1/checkout.js';
       document.body.appendChild(s);
     }
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   const subtotal = cart.reduce((s, x) => s + x.product.price * x.quantity, 0);
   const shipping = subtotal >= 999 ? 0 : 99;
@@ -172,6 +177,10 @@ export default function Checkout() {
   }
 
   const selectedAddress = addresses.find(a => a.id === addressId);
+
+  if (!isLoaded || !isSignedIn) return (
+    <main className="container section"><p className="muted">Loading…</p></main>
+  );
 
   return (
     <main className="checkout-page">

@@ -29,10 +29,10 @@ enum PaymentStatus {
 }
 
 model User {
-  id           String    @id @default(cuid())
+  id           String    @id // Clerk user ID (e.g. user_xxx)
   name         String
   email        String    @unique
-  passwordHash String
+  passwordHash String    @default("") // legacy – not used with Clerk
   role         Role      @default(CUSTOMER)
   phone        String?
   createdAt    DateTime  @default(now())

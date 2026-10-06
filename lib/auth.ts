@@ -1,12 +1,65 @@
-import { cookies } from 'next/headers';
-import { SignJWT, jwtVerify } from 'jose';
-import bcrypt from 'bcryptjs';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from './db';
-const secret = new TextEncoder().encode(process.env.AUTH_SECRET || 'development-secret-change-me');
-export async function hashPassword(p:string){return bcrypt.hash(p,12)}
-export async function verifyPassword(p:string,h:string){return bcrypt.compare(p,h)}
-export async function setSession(user:{id:string;role:string}){const token=await new SignJWT({role:user.role}).setProtectedHeader({alg:'HS256'}).setSubject(user.id).setIssuedAt().setExpirationTime('7d').sign(secret);(await cookies()).set('session',token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:60*60*24*7})}
-export async function clearSession(){(await cookies()).delete('session')}
-export async function getSession(){const token=(await cookies()).get('session')?.value;if(!token)return null;try{const {payload}=await jwtVerify(token,secret);return payload.sub?{id:payload.sub,role:String(payload.role)}:null}catch{return null}}
-export async function requireUser(){const s=await getSession();if(!s)throw new Error('UNAUTHORIZED');const user=await db.user.findUnique({where:{id:s.id}});if(!user)throw new Error('UNAUTHORIZED');return user}
-export async function requireAdmin(){const u=await requireUser();if(u.role!=='ADMIN')throw new Error('FORBIDDEN');return u}
+
+/**
+ * Returns the current user's DB record.
+ * If the user exists in Clerk but not yet in our DB, it is created on the fly
+ * (just-in-time provisioning).
+ * Throws 'UNAUTHORIZED' when there is no active Clerk session.
+ */
+export async function requireUser() {
+  const { userId } = await auth();
+  if (!userId) throw new Error('UNAUTHORIZED');
+
+  // Try to find by Clerk user ID (stored as User.id)
+  let user = await db.user.findUnique({ where: { id: userId } });
+
+  if (!user) {
+    // JIT provision: fetch profile from Clerk and create a DB row
+    const clerkUser = await currentUser();
+    if (!clerkUser) throw new Error('UNAUTHORIZED');
+
+    const email =
+      clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)
+        ?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress;
+
+    if (!email) throw new Error('UNAUTHORIZED');
+
+    const name =
+      [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') ||
+      clerkUser.username ||
+      email.split('@')[0];
+
+    user = await db.user.upsert({
+      where:  { id: userId },
+      update: {},
+      create: {
+        id:    userId,
+        name,
+        email,
+        passwordHash: '', // not used — Clerk owns credentials
+      },
+    });
+  }
+
+  return user;
+}
+
+/**
+ * Returns the current user and asserts they have the ADMIN role.
+ * Throws 'UNAUTHORIZED' or 'FORBIDDEN' accordingly.
+ */
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (user.role !== 'ADMIN') throw new Error('FORBIDDEN');
+  return user;
+}
+
+/** Lightweight check — returns the session user record or null. */
+export async function getSession() {
+  try {
+    return await requireUser();
+  } catch {
+    return null;
+  }
+}

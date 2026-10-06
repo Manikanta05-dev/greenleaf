@@ -1,2 +1,10 @@
-import {NextResponse} from 'next/server';import {db} from '@/lib/db';import {hashPassword,setSession} from '@/lib/auth';import {registerSchema} from '@/lib/validators';
-export async function POST(req:Request){try{const body=registerSchema.parse(await req.json());const exists=await db.user.findUnique({where:{email:body.email.toLowerCase()}});if(exists)return NextResponse.json({error:'Email already registered'},{status:409});const user=await db.user.create({data:{name:body.name,email:body.email.toLowerCase(),passwordHash:await hashPassword(body.password),phone:body.phone}});await setSession(user);return NextResponse.json({user:{id:user.id,name:user.name,email:user.email,role:user.role}})}catch(e:any){return NextResponse.json({error:e?.issues?.[0]?.message||'Invalid request'},{status:400})}}
+import { NextResponse } from 'next/server';
+
+// Authentication is now handled by Clerk.
+// This route is kept for backward compatibility but is no longer active.
+export async function POST() {
+  return NextResponse.json(
+    { error: 'This endpoint is deprecated. Please use Clerk authentication.' },
+    { status: 410 },
+  );
+}
